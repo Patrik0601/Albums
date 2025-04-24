@@ -4,11 +4,101 @@
   <meta charset="UTF-8" />
   <title>Album kezelő</title>
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; }
     input, button { margin: 5px 0; padding: 8px; width: 100%; }
     .album { border: 1px solid #ccc; padding: 10px; margin-top: 10px; }
     .album button { width: auto; margin-right: 10px; }
     .hidden { display: none; }
+
+    body {
+    font-family: 'Segoe UI', Tahoma, Verdana, sans-serif;
+    background: #f0f2f5;
+    color: #333;
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 20px;
+  }
+
+  h1, h2, h3 {
+    color: #2c3e50;
+  }
+
+  input, button {
+    display: block;
+    margin: 10px 0;
+    padding: 10px 14px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  input:focus, button:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+  }
+
+  button {
+    background: #3498db;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+
+  button:hover {
+    background: #2980b9;
+  }
+
+  .album {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    margin-top: 15px;
+  }
+
+  .album button {
+    display: inline-block;
+    margin: 8px 5px 0 0;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    width: auto;
+    border-radius: 6px;
+  }
+
+  .album button:first-child {
+    background: #27ae60;
+  }
+
+  .album button:first-child:hover {
+    background: #219150;
+  }
+
+  .album button:last-child {
+    background: #e74c3c;
+  }
+
+  .album button:last-child:hover {
+    background: #c0392b;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  #editFormContainer, #addAlbumForm {
+    background: #ffffff;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+
+  #editFormContainer h2, #addAlbumForm h3 {
+    margin-top: 0;
+  }
   </style>
 </head>
 <body>
@@ -22,10 +112,10 @@
     <button onclick="toggleAddAlbumForm()">Új album hozzáadása</button>
     <div id="addAlbumForm" class="hidden">
       <h3>Új album hozzáadása</h3>
-      <input id="zenekar" placeholder="Zenekar neve" />
-      <input id="albumName" placeholder="Album címe" />
-      <input id="releaseDateYear" type="number" placeholder="Kiadás éve" />
-      <input id="sales" type="number" placeholder="Eladások száma" />
+      <input id="zenekar" placeholder="Zenekar neve">
+      <input id="albumName" placeholder="Album címe">
+      <input id="releaseDateYear" type="number" placeholder="Kiadás éve">
+      <input id="sales" type="number" placeholder="Eladások száma">
       <button onclick="addAlbum()">Album hozzáadása</button>
     </div>
     <div id="albumList"></div>
@@ -38,7 +128,20 @@
     <div id="singleAlbumResult"></div>
   </div>
 
+  <div id="editFormContainer" style="display: none; margin-top: 20px;">
+    <h2>Album módosítása</h2>
+    <input id="editId" type="hidden">
+    <input id="editZenekar" placeholder="Zenekar neve">
+    <input id="editAlbumName" placeholder="Album címe">
+    <input id="editReleaseDateYear" type="number" placeholder="Kiadás éve">
+    <input id="editSales" type="number" placeholder="Eladások száma">
+    <button onclick="saveEditedAlbum()">Mentés</button>
+    <button onclick="cancelEdit()">Mégse</button>
+  </div>
+
   <script>
+    let currentEditId = null
+
     function showAllAlbums() {
       document.getElementById('albumSection').classList.remove('hidden')
       document.getElementById('singleAlbumSection').classList.add('hidden')
@@ -58,18 +161,18 @@
 
     async function fetchAlbums() {
       const res = await fetch('http://localhost:3000/albums')
-      const albums = await res.json()
+      albums = await res.json()
       const list = document.getElementById('albumList')
       list.innerHTML = ''
       albums.forEach(album => {
         const div = document.createElement('div')
         div.className = 'album'
         div.innerHTML = `
-          <b>${album.zenekar} - ${album.albumName}</b> (${album.releaseDateYear})<br>
+          <b>${album.zenekar} - ${album.albumName}</b><br>
+          Kiadás éve: ${album.releaseDateYear}<br>
           Eladások: ${album.sales} db<br>
-          <button onclick="editAlbum(${album.id})">Módosítás</button>
-          <button onclick="deleteAlbum(${album.id})">Törlés</button>
-        `
+          <button onclick="showEditForm(${album.id})">Album módosítása</button>
+          <button onclick="deleteAlbum(${album.id})">Törlés</button>`
         list.appendChild(div)
       })
     }
@@ -113,18 +216,55 @@
       fetchAlbums()
     }
 
+    let albums = []
     async function editAlbum(id) {
-      const zenekar = prompt("Új zenekar neve:")
-      const albumName = prompt("Új album címe:")
-      const releaseDateYear = prompt("Új kiadás éve:")
-      const sales = prompt("Új eladási szám:")
+      const album = albums.find(a => a.id === id)
+      document.getElementById('editZenekar').value = album.zenekar
+      document.getElementById('editAlbumName').value = album.albumName
+      document.getElementById('editReleaseDateYear').value = album.releaseDateYear
+      document.getElementById('editSales').value = album.sales
+      document.getElementById('editFormContainer').style.display = 'block'
+    }
 
-      await fetch(`http://localhost:3000/albums/${id}`, {
+    function cancelEdit() {
+      document.getElementById('editFormContainer').style.display = 'none'
+    }
+
+    function showEditForm(id) {
+      const album = albums.find(a => a.id === id)
+      if (!album) {
+        alert("Nem található az album az adott ID-val!")
+        return
+      }
+      currentEditId = id
+      document.getElementById('editZenekar').value = album.zenekar
+      document.getElementById('editAlbumName').value = album.albumName
+      document.getElementById('editReleaseDateYear').value = album.releaseDateYear
+      document.getElementById('editSales').value = album.sales
+      document.getElementById('editFormContainer').style.display = 'block'
+    }
+
+    function cancelEdit() {
+      document.getElementById('editFormContainer').style.display = 'none'
+      currentEditId = null
+    }
+
+    async function saveEditedAlbum() {
+      const updatedAlbum = {
+        zenekar: document.getElementById('editZenekar').value,
+        albumName: document.getElementById('editAlbumName').value,
+        releaseDateYear: parseInt(document.getElementById('editReleaseDateYear').value),
+        sales: parseInt(document.getElementById('editSales').value)
+      }
+
+      await fetch(`http://localhost:3000/albums/${currentEditId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ zenekar, albumName, releaseDateYear, sales })
+        body: JSON.stringify(updatedAlbum)
       })
 
+      alert('Album módosítva')
+      cancelEdit()
       fetchAlbums()
     }
 
@@ -135,6 +275,7 @@
       document.getElementById('sales').value = ''
       document.getElementById('addAlbumForm').classList.add('hidden')
     }
+
   </script>
 </body>
 </html>

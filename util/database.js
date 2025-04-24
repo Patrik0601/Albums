@@ -33,11 +33,11 @@ export async function initializeDB(){
     await dbRun("DROP TABLE IF EXISTS albums;");
     await dbRun("CREATE TABLE IF NOT EXISTS albums (id INTEGER PRIMARY KEY AUTOINCREMENT, zenekar STRING, albumName STRING, releaseDateYear INT, sales INT);")
         const albums = [
-            {zenekar: "Black Sabbath", albumName: "Paranoid", releaseDateYear: "1970", sales: "12000000"},
-            {zenekar: "Metallica", albumName: "Master of Puppets", releaseDateYear: "1986", sales: "3000000"},
-            {zenekar: "Judas Priest", albumName: "British Steel", releaseDateYear: "1980", sales: "1165000"},
-            {zenekar: "Iron Maiden", albumName: "The Number of the Beast", releaseDateYear: "1982", sales: "14000000"},
-            {zenekar: "Slayer", albumName: "Reign in Blood", releaseDateYear: "1986", sales: "500000"}, 
+            {zenekar: "Black Sabbath", albumName: "Paranoid", releaseDateYear: 1970, sales: "12000000"},
+            {zenekar: "Metallica", albumName: "Master of Puppets", releaseDateYear: 1986, sales: "3000000"},
+            {zenekar: "Judas Priest", albumName: "British Steel", releaseDateYear: 1980, sales: "1165000"},
+            {zenekar: "Iron Maiden", albumName: "The Number of the Beast", releaseDateYear: 1982, sales: "14000000"},
+            {zenekar: "Slayer", albumName: "Reign in Blood", releaseDateYear: 1986, sales: "500000"}, 
         ]
     for(const album of albums){
         await dbRun("INSERT INTO albums (zenekar, albumName, releaseDateYear, sales) VALUES (?, ?, ?, ?);", [album.zenekar, album.albumName, album.releaseDateYear, album.sales]);
