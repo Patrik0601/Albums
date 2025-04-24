@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <title>Album kezelő</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+    input, button { margin: 5px 0; padding: 8px; width: 100%; }
+    .album { border: 1px solid #ccc; padding: 10px; margin-top: 10px; }
+    .album button { width: auto; margin-right: 10px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Album Kezelő</h1>
+
+  <button onclick="showAllAlbums()">Albumok megjelenítése</button>
+  <button onclick="showSingleAlbumForm()">Egy album megjelenítése</button>
+
+  <div id="albumSection" class="hidden">
+    <h2>Albumok</h2>
+    <button onclick="toggleAddAlbumForm()">Új album hozzáadása</button>
+    <div id="addAlbumForm" class="hidden">
+      <h3>Új album hozzáadása</h3>
+      <input id="zenekar" placeholder="Zenekar neve" />
+      <input id="albumName" placeholder="Album címe" />
+      <input id="releaseDateYear" type="number" placeholder="Kiadás éve" />
+      <input id="sales" type="number" placeholder="Eladások száma" />
+      <button onclick="addAlbum()">Album hozzáadása</button>
+    </div>
+    <div id="albumList"></div>
+  </div>
+
+  <div id="singleAlbumSection" class="hidden">
+    <h2>Album lekérdezése ID alapján</h2>
+    <input id="albumIdInput" type="number" placeholder="Add meg az album ID-ját" />
+    <button onclick="getAlbumById()">Megjelenítés</button>
+    <div id="singleAlbumResult"></div>
+  </div>
+
+  <script>
+    function showAllAlbums() {
+      document.getElementById('albumSection').classList.remove('hidden')
+      document.getElementById('singleAlbumSection').classList.add('hidden')
+      fetchAlbums()
+    }
+
+    function showSingleAlbumForm() {
+      document.getElementById('singleAlbumSection').classList.remove('hidden')
+      document.getElementById('albumSection').classList.add('hidden')
+      document.getElementById('singleAlbumResult').innerHTML = ''
+    }
+
+    function toggleAddAlbumForm() {
+      const form = document.getElementById('addAlbumForm')
+      form.classList.toggle('hidden')
+    }
+
+    async function fetchAlbums() {
+      const res = await fetch('http://localhost:3000/albums')
+      const albums = await res.json()
+      const list = document.getElementById('albumList')
+      list.innerHTML = ''
+      albums.forEach(album => {
+        const div = document.createElement('div')
+        div.className = 'album'
+        div.innerHTML = `
+          <b>${album.zenekar} - ${album.albumName}</b> (${album.releaseDateYear})<br>
+          Eladások: ${album.sales} db<br>
+          <button onclick="editAlbum(${album.id})">Módosítás</button>
+          <button onclick="deleteAlbum(${album.id})">Törlés</button>
+        `
+        list.appendChild(div)
+      })
+    }
+
+    async function getAlbumById() {
+      const id = document.getElementById('albumIdInput').value
+      const res = await fetch(`http://localhost:3000/albums/${id}`)
+      const container = document.getElementById('singleAlbumResult')
+      if (res.ok) {
+        const album = await res.json()
+        container.innerHTML = `
+          <div class="album">
+            <b>${album.zenekar} - ${album.albumName}</b><br>
+            Kiadás éve: ${album.releaseDateYear}<br>
+            Eladások: ${album.sales} db
+          </div>
+        `
+      } else {
+        container.innerHTML = `<p style="color:red;">Nincs ilyen album ID: ${id}</p>`
+      }
+    }
+
+    async function addAlbum() {
+      const zenekar = document.getElementById('zenekar').value
+      const albumName = document.getElementById('albumName').value
+      const releaseDateYear = document.getElementById('releaseDateYear').value
+      const sales = document.getElementById('sales').value
+
+      await fetch('http://localhost:3000/albums', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ zenekar, albumName, releaseDateYear, sales })
+      })
+
+      clearForm()
+      fetchAlbums()
+    }
+
+    async function deleteAlbum(id) {
+      await fetch(`http://localhost:3000/albums/${id}`, { method: 'DELETE' })
+      fetchAlbums()
+    }
+
+    async function editAlbum(id) {
+      const zenekar = prompt("Új zenekar neve:")
+      const albumName = prompt("Új album címe:")
+      const releaseDateYear = prompt("Új kiadás éve:")
+      const sales = prompt("Új eladási szám:")
+
+      await fetch(`http://localhost:3000/albums/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ zenekar, albumName, releaseDateYear, sales })
+      })
+
+      fetchAlbums()
+    }
+
+    function clearForm() {
+      document.getElementById('zenekar').value = ''
+      document.getElementById('albumName').value = ''
+      document.getElementById('releaseDateYear').value = ''
+      document.getElementById('sales').value = ''
+      document.getElementById('addAlbumForm').classList.add('hidden')
+    }
+  </script>
+</body>
+</html>
